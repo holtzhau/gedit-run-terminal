@@ -1,18 +1,10 @@
--- CLASS BROWSER PLUGIN --
+GEdit Run Terminal
+==================
 
-This is a development release of the class browser plugin for gedit.
-It works on with recent gedit versions. 
+A plugin for GEdit that combines the functionality of the external tools plugin with an embedded gnome-terminal.
+The result is a terminal that executes commands at your will, e.g. single keystroke python execution.
 
-It contains two code parsers:
- * a generic parser based on ctags-exuberant (ctags must be installed)
- * a python parser
- * a ruby parser
- * a parser for diff files
-
-For questions or suggestions, mail me at <fredericback@gmail.com>
-
-
--- INSTALLATION --
-
-Put the content of this directory in your ~/.gnome2/gedit/plugins directory
-and restart gedit. Enable the plugin under Edit->Preferences
+Features:
+---------
+-Click on numbered errors to go to position in file. (also for commands such as "rgrep -in test .")
+-Right click on the terminal for more options, including experimental right panel support.
