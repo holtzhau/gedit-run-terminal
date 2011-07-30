@@ -1,0 +1,9 @@
+# [Gedit Tool]
+# Name=Reset terminal
+# Shortcut=<Control>F5
+# Applicability=all
+# Output=run-in-terminal
+# Input=nothing
+# Save-files=nothing
+
+reset

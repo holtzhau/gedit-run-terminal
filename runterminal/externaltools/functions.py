@@ -45,6 +45,38 @@ def current_word(document):
 
 # ==== Capture related functions ====
 def run_external_tool(window, node):
+    if node.output == "run-in-terminal":
+        helper = window.get_data("RunTerminalPluginWindowData") 
+        view = window.get_active_view()
+        document = view.get_buffer()
+        uri = document.get_uri()
+        if uri is not None:
+            gfile = gio.File(uri)
+            scheme = gfile.get_uri_scheme()
+            name = os.path.basename(uri)
+            path = gfile.get_path()
+            cwd = os.path.dirname(path)            
+            command = open(node.command).read()
+            command = command.replace("$GEDIT_CURRENT_DOCUMENT_NAME", name)
+            command = command.replace("$GEDIT_CURRENT_DOCUMENT_PATH", path)
+            command = command.replace("$GEDIT_CURRENT_DOCUMENT_DIR", cwd)
+            command = command.replace("$GEDIT_CURRENT_DOCUMENT_URI", uri)
+            command = command.replace("$GEDIT_CURRENT_DOCUMENT_SCHEME", scheme)
+            if "$GEDIT_DOCUMENTS_URI" in command or \
+            "$GEDIT_DOCUMENTS_PATH" in command:
+                documents_uri = [doc.get_uri()
+                                 for doc in window.get_documents()
+                                 if doc.get_uri() is not None]
+                documents_path = [gio.File(uri).get_path()
+                                 for uri in documents_uri                                 
+                                 if gedit.utils.uri_has_file_scheme(uri)]
+                command = command.replace("$GEDIT_DOCUMENTS_URI", '"'+''.join(documents_uri) + '"')
+                command = command.replace("$GEDIT_DOCUMENTS_PATH", '"'+''.join(documents_path) + '"')
+            command = "\n".join([line for line in command.split('\n') if not line.strip(" ").startswith("#")])
+            helper._panel.show()
+            helper._panel.run(command.strip("\n"))
+        return
+        
     # Configure capture environment
     try:
         cwd = os.getcwd()

@@ -71,6 +71,10 @@
         <col id="1">output-panel</col>
       </row>
       <row>
+        <col id="0" translatable="yes">Run in terminal</col>
+        <col id="1">run-in-terminal</col>
+      </row>
+      <row>      
         <col id="0" translatable="yes">Create new document</col>
         <col id="1">new-document</col>
       </row>

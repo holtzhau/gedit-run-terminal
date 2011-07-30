@@ -22,7 +22,7 @@
 
 import gedit
 import gedit.utils
-import pango
+import pango          
 import gtk
 import gtk.gdk
 import gobject
@@ -34,7 +34,7 @@ import os
 from gpdefs import *
 from math import *
 from externaltools import ExternalToolsWindowHelper, ToolLibrary, Manager
-
+from externaltools import FileLookup
 try:
     gettext.bindtextdomain(GETTEXT_PACKAGE, GP_LOCALEDIR)
     _ = lambda s: gettext.dgettext(GETTEXT_PACKAGE, s);
@@ -95,7 +95,8 @@ class GeditTerminal(gtk.HBox):
         self._vte.connect("popup-menu", self.on_vte_popup_menu)
         self._vte.connect("child-exited", lambda term: term.fork_command())
         self._vte.fork_command()
-
+        self.file_lookup = FileLookup()
+        
     def reconfigure_vte(self):
         # Fonts
         if gconf_get_bool(self.GCONF_PROFILE_DIR + "/use_system_font"):
@@ -151,25 +152,12 @@ class GeditTerminal(gtk.HBox):
 
     def on_vte_key_press(self, term, event):
         modifiers = event.state & gtk.accelerator_get_default_mod_mask()
-#        if event.keyval in (gtk.keysyms.Tab, gtk.keysyms.KP_Tab, gtk.keysyms.ISO_Left_Tab):
-#            if modifiers == gtk.gdk.CONTROL_MASK:
-#                self.get_toplevel().child_focus(gtk.DIR_TAB_FORWARD)
-#                return True
-#            elif modifiers == gtk.gdk.CONTROL_MASK | gtk.gdk.SHIFT_MASK:
-#                self.get_toplevel().child_focus(gtk.DIR_TAB_BACKWARD)
-#                return True
         if event.keyval == gtk.keysyms.F6:
             if modifiers == gtk.gdk.SHIFT_MASK:
                 self.get_toplevel().child_focus(gtk.DIR_TAB_BACKWARD)
             else:
                 self.get_toplevel().child_focus(gtk.DIR_TAB_FORWARD)
             return True
-#        elif event.keyval == gtk.keysyms.F5 and modifiers == gtk.gdk.CONTROL_MASK:
-#            self.reset()
-#            return True
-#        elif event.keyval == gtk.keysyms.F5:
-#            self.run(self.get_document_path())
-#            return True
         return False
     
     def on_vte_button_press(self, term, event):
@@ -184,27 +172,27 @@ class GeditTerminal(gtk.HBox):
                     print details
                     uri, line = details[1].strip(",").strip("\""), details[3]
                 os.chdir(self.current_directory())
-                print self.current_directory()
-                print os.path.abspath(uri), os.path.join(self.current_directory(), uri)
-                uri = "file://" + os.path.join(self.current_directory(), uri)
-
-                #uri = "file://" + os.path.expanduser(os.path.abspath(uri))
-                #uri = "file://" + self.get_document_path()
-                line = int(line)
-                tab = self._window.get_tab_from_uri(uri) 
-                if tab == None:
-                    tab = self._window.create_tab_from_uri( uri, self._encoding, line, False, False )
-                else:
-                    doc = tab.get_document()
-                    doc.begin_user_action()
-                    it = doc.get_iter_at_line_offset(line-1,0)
-                    doc.place_cursor(it)
-                    (start, end) = doc.get_bounds()
-                    self._window.get_active_view().scroll_to_iter(end,0.0)
-                    self._window.get_active_view().scroll_to_iter(it,0.0)
-                    self._window.get_active_view().grab_focus()
-                    doc.end_user_action()
-                self._window.set_active_tab( tab)                    
+                gfile = self.file_lookup.lookup(uri)
+                if gfile:
+                    gedit.commands.load_uri(self._window, gfile.get_uri(), None, int(line))
+#                uri = "file://" + os.path.join(self.current_directory(), uri)
+#                #uri = "file://" + os.path.expanduser(os.path.abspath(uri))
+#                #uri = "file://" + self.get_document_path()
+#                line = int(line)
+#                tab = self._window.get_tab_from_uri(uri) 
+#                if tab == None:
+#                    tab = self._window.create_tab_from_uri( uri, self._encoding, line, False, False )
+#                else:
+#                    doc = tab.get_document()
+#                    doc.begin_user_action()
+#                    it = doc.get_iter_at_line_offset(line-1,0)
+#                    doc.place_cursor(it)
+#                    (start, end) = doc.get_bounds()
+#                    self._window.get_active_view().scroll_to_iter(end,0.0)
+#                    self._window.get_active_view().scroll_to_iter(it,0.0)
+#                    self._window.get_active_view().grab_focus()
+#                    doc.end_user_action()
+#                self._window.set_active_tab( tab)                    
 
         elif event.button == 3:
             self.do_popup(event)
@@ -259,11 +247,15 @@ class GeditTerminal(gtk.HBox):
     def reset(self):
         self._vte.feed_child("\x15reset\n")
         
-    def run(self, command, directory):
+    def run(self, command):
         #self._window.get_active_document().save(True)
         #self.change_directory(os.path.dirname(filename))
-        self.change_directory(directory)
-        self._vte.feed_child('\x15' + command)
+        self._vte.feed_child('\x15' + command + "\n")
+
+    def show(self):
+        panel = self._window.get_bottom_panel()
+        panel.show()
+        panel.activate_item(self)
         
 ui_str = """
 <ui>
@@ -311,16 +303,14 @@ class TerminalWindowHelper(object):
         self.hpane.show_all()
         self.init_sized = False
 
-#        self._insert_menu()
-
     def pane_resize(self, pane, param):
         if param.name == 'position' and self.init_sized:
-            print "set", pane.get_property('position')
+            #print "set", pane.get_property('position')
             self.gconf_client.set_int(self.gconfdir+"/rightpanel_position", pane.get_property('position'))
         return True
         
     def resize_wait(self):
-        print "sized", self.gconf_client.get_int(self.gconfdir+"/rightpanel_position")
+        #print "sized", self.gconf_client.get_int(self.gconfdir+"/rightpanel_position")
         self.init_sized = True
         self.hpane.set_position(self.gconf_client.get_int(self.gconfdir+"/rightpanel_position"))
         return False
@@ -353,36 +343,9 @@ class TerminalWindowHelper(object):
         self.hbox.add2(self.vbox)        
                 
     def deactivate(self):
-        #self._remove_menu()
         bottom = self._window.get_bottom_panel()
         bottom.remove_item(self._panel)
-     
-#    def _insert_menu(self):
-#        manager = self._window.get_ui_manager()
-#        self._action_group = gtk.ActionGroup("RunTerminalActions")
-#        self._action_group.add_actions([
-##                                        ("Run",
-##                                         None,
-##                                         _("R_un"),
-##                                         "F5",                                         
-##                                         _("Run Python code"),
-##                                         lambda a, w: self._panel.run(self._panel.get_document_path())),
-#                                         ("Reset Terminal",
-#                                         None,
-#                                         _("Re_set Terminal"),
-#                                         "<Control>F5",                                         
-#                                         _("Reset and clears terminal"),
-#                                         lambda a, w: self._panel.reset()),],
-#                                        self._window)
-##        manager.insert_action_group(self._action_group, -1)
-#        self._ui_id = manager.add_ui_from_string(ui_str)
 
-#    def _remove_menu(self):
-#        manager = self._window.get_ui_manager()
-#        manager.remove_ui(self._ui_id)
-#        manager.remove_action_group(self._action_group)
-#        manager.ensure_update()
-#        
     def update_ui(self):
         pass
 
@@ -399,16 +362,11 @@ class TerminalWindowHelper(object):
         menu.prepend(item)        
         
         if location:
-            item = gtk.MenuItem(_("C_hange Directory"))
+            item = gtk.MenuItem(_("_Change to current directory"))
             item.connect("activate", lambda menu_item: panel.change_directory(path))
             item.set_sensitive(path is not None)
             menu.prepend(item)
-        
-#        item = gtk.MenuItem(_("Run"))
-#        item.connect("activate", lambda menu_item: panel.run(location))
-#        item.set_sensitive(path is not None)
-#        menu.prepend(item)
-                
+
 
 class RunTerminalPlugin(gedit.Plugin):
     WINDOW_DATA_KEY = "RunTerminalPluginWindowData"

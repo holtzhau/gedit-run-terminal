@@ -17,7 +17,7 @@
 #    Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 
 __all__ = ('ExternalToolsPlugin', 'ExternalToolsWindowHelper',
-           'Manager', 'OutputPanel', 'Capture', 'UniqueById')
+           'Manager', 'OutputPanel', 'Capture', 'UniqueById', 'FileLookup')
 
 import gedit
 import gtk
@@ -26,6 +26,7 @@ from library import ToolLibrary
 from outputpanel import OutputPanel
 from capture import Capture
 from functions import *
+from filelookup import FileLookup
 
 class ToolMenu(object):
     ACTION_HANDLER_DATA_KEY = "ExternalToolActionHandlerData"
@@ -227,52 +228,5 @@ class ExternalToolsWindowHelper(object):
 
     def update_manager(self, tool):
         self._plugin.update_manager(tool)
-
-class ExternalToolsPlugin(gedit.Plugin):
-    WINDOW_DATA_KEY = "ExternalToolsPluginWindowData"
-
-    def __init__(self):
-        super(ExternalToolsPlugin, self).__init__()
-        self._manager = None
-        self._manager_default_size = None
-        ToolLibrary().set_locations(os.path.join(self.get_data_dir(), 'tools'))
-
-    def activate(self, window):
-        helper = ExternalToolsWindowHelper(self, window)
-        window.set_data(self.WINDOW_DATA_KEY, helper)
-
-    def deactivate(self, window):
-        window.get_data(self.WINDOW_DATA_KEY).deactivate()
-        window.set_data(self.WINDOW_DATA_KEY, None)
-
-    def update_ui(self, window):
-        window.get_data(self.WINDOW_DATA_KEY).update_ui()
-
-    def create_configure_dialog(self):
-        return self.open_dialog()
-
-    def open_dialog(self):
-        if not self._manager:
-            self._manager = Manager(self.get_data_dir())
-
-            if self._manager_default_size:
-                self._manager.dialog.set_default_size(*self._manager_default_size)
-
-            self._manager.dialog.connect('destroy', self.on_manager_destroy)
-
-        window = gedit.app_get_default().get_active_window()
-        self._manager.run(window)
-
-        return self._manager.dialog
-
-    def update_manager(self, tool):
-        if not self._manager:
-            return
-
-        self._manager.tool_changed(tool, True)
-
-    def on_manager_destroy(self, dialog):
-        self._manager_default_size = [dialog.allocation.width, dialog.allocation.height]
-        self._manager = None
 
 # ex:ts=4:et:

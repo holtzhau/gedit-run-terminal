@@ -1,0 +1,11 @@
+# [Gedit Tool]
+# Name=Run python
+# Shortcut=F5
+# Languages=python
+# Applicability=all
+# Output=run-in-terminal
+# Input=nothing
+# Save-files=document
+
+cd $GEDIT_CURRENT_DOCUMENT_DIR
+python $GEDIT_CURRENT_DOCUMENT_NAME
