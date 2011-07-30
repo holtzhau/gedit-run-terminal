@@ -57,6 +57,7 @@ def run_external_tool(window, node):
             path = gfile.get_path()
             cwd = os.path.dirname(path)            
             command = open(node.command).read()
+            print node.command
             command = command.replace("$GEDIT_CURRENT_DOCUMENT_NAME", name)
             command = command.replace("$GEDIT_CURRENT_DOCUMENT_PATH", path)
             command = command.replace("$GEDIT_CURRENT_DOCUMENT_DIR", cwd)

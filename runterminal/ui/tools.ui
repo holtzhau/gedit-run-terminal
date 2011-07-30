@@ -131,7 +131,7 @@
   </object>
   <object class="GtkDialog" id="tool-manager-dialog">
     <property name="title" translatable="yes">Run Terminal Manager</property>
-    <property name="default_width">750</property>
+    <property name="default_width">850</property>
     <property name="default_height">500</property>
     <property name="type_hint">dialog</property>
     <property name="skip_taskbar_hint">True</property>
