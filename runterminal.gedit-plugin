@@ -1,0 +1,9 @@
+[Gedit Plugin]
+Loader=python
+Module=runterminal
+IAge=2
+Name=RunTerminal
+Description=This plugin combines the launch of external tools with an embedded gnome terminal.
+Authors=Pieter Holtzhausen
+Copyright=Copyright @ 2007 Pieter Holtzhausen
+Website=
