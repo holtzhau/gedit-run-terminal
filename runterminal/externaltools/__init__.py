@@ -16,7 +16,7 @@
 #    along with this program; if not, write to the Free Software
 #    Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 
-__all__ = ('ExternalToolsPlugin', 'ExternalToolsWindowHelper',
+__all__ = ('RunExternalToolsPlugin', 'RunExternalToolsWindowHelper',
            'Manager', 'OutputPanel', 'Capture', 'UniqueById', 'FileLookup')
 
 import gedit
@@ -29,8 +29,8 @@ from functions import *
 from filelookup import FileLookup
 
 class ToolMenu(object):
-    ACTION_HANDLER_DATA_KEY = "ExternalToolActionHandlerData"
-    ACTION_ITEM_DATA_KEY = "ExternalToolActionItemData"
+    ACTION_HANDLER_DATA_KEY = "RunExternalToolActionHandlerData"
+    ACTION_ITEM_DATA_KEY = "RunExternalToolActionItemData"
 
     def __init__(self, library, window, menupath):
         super(ToolMenu, self).__init__()
@@ -39,7 +39,7 @@ class ToolMenu(object):
         self._menupath = menupath
 
         self._merge_id = 0
-        self._action_group = gtk.ActionGroup("ExternalToolsPluginToolActions")
+        self._action_group = gtk.ActionGroup("RunExternalToolsPluginToolActions")
         self._signals = []
         self.update()
 
@@ -74,7 +74,7 @@ class ToolMenu(object):
         manager = self._window.get_ui_manager()
 
         for item in directory.subdirs:
-            action_name = 'ExternalToolDirectory%X' % id(item)
+            action_name = 'RunExternalToolDirectory%X' % id(item)
             action = gtk.Action(action_name, item.name.replace('_', '__'), None, None)
             self._action_group.add_action(action)
 
@@ -85,7 +85,7 @@ class ToolMenu(object):
             self._insert_directory(item, path + '/' + action_name)
 
         for item in directory.tools:
-            action_name = 'ExternalToolTool%X' % id(item)
+            action_name = 'RunExternalToolTool%X' % id(item)
             action = gtk.Action(action_name, item.name.replace('_', '__'), item.comment, None)
             handler = action.connect("activate", capture_menu_action, self._window, item)
 
@@ -93,7 +93,7 @@ class ToolMenu(object):
             action.set_data(self.ACTION_HANDLER_DATA_KEY, handler)
             
             # Make sure to replace accel
-            accelpath = '<Actions>/ExternalToolsPluginToolActions/%s' % (action_name, )
+            accelpath = '<Actions>/RunExternalToolsPluginToolActions/%s' % (action_name, )
             
             if item.shortcut:
                 key, mod = gtk.accelerator_parse(item.shortcut)
@@ -111,7 +111,7 @@ class ToolMenu(object):
         tool.shortcut = gtk.accelerator_name(key, mod)
         tool.save()
         
-        self._window.get_data("ExternalToolsPluginWindowData").update_manager(tool)
+        self._window.get_data("RunExternalToolsPluginWindowData").update_manager(tool)
 
     def update(self):
         self.remove()
@@ -155,9 +155,9 @@ class ToolMenu(object):
             if item is not None:
                 action.set_visible(states[item.applicability] and self.filter_language(language, item))
 
-class ExternalToolsWindowHelper(object):
+class RunExternalToolsWindowHelper(object):
     def __init__(self, plugin, window):
-        super(ExternalToolsWindowHelper, self).__init__()
+        super(RunExternalToolsWindowHelper, self).__init__()
 
         self._window = window
         self._plugin = plugin
@@ -165,15 +165,15 @@ class ExternalToolsWindowHelper(object):
 
         manager = window.get_ui_manager()
 
-        self._action_group = gtk.ActionGroup('ExternalToolsPluginActions')
+        self._action_group = gtk.ActionGroup('RunExternalToolsPluginActions')
         self._action_group.set_translation_domain('gedit')
-        self._action_group.add_actions([('ExternalToolManager',
+        self._action_group.add_actions([('RunExternalToolManager',
                                          None,
                                          _('Manage _Run Terminal...'),
                                          None,
                                          _("Opens the Run Terminal Manager"),
                                          lambda action: plugin.open_dialog()),
-                                        ('ExternalTools',
+                                        ('RunExternalTools',
                                         None,
                                         _('Run _Terminal'),
                                         None,
@@ -187,13 +187,13 @@ class ExternalToolsWindowHelper(object):
                 <menu name="ToolsMenu" action="Tools">
                   <placeholder name="ToolsOps_4">
                     <separator/>
-                    <menu name="ExternalToolsMenu" action="ExternalTools">
-                        <placeholder name="ExternalToolPlaceholder"/>
+                    <menu name="RunExternalToolsMenu" action="RunExternalTools">
+                        <placeholder name="RunExternalToolPlaceholder"/>
                     </menu>
                     <separator/>
                   </placeholder>
                   <placeholder name="ToolsOps_5">
-                    <menuitem name="ExternalToolManager" action="ExternalToolManager"/>
+                    <menuitem name="RunExternalToolManager" action="RunExternalToolManager"/>
                   </placeholder>
                 </menu>
               </menubar>
@@ -202,7 +202,7 @@ class ExternalToolsWindowHelper(object):
         self._merge_id = manager.add_ui_from_string(ui_string)
 
         self.menu = ToolMenu(self._library, self._window,
-                             "/MenuBar/ToolsMenu/ToolsOps_4/ExternalToolsMenu/ExternalToolPlaceholder")
+                             "/MenuBar/ToolsMenu/ToolsOps_4/RunExternalToolsMenu/RunExternalToolPlaceholder")
         manager.ensure_update()
 
         # Create output console

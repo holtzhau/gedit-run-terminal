@@ -154,7 +154,7 @@ def run_external_tool(window, node):
     output_type = node.output
 
     # Get the panel
-    panel = window.get_data("ExternalToolsPluginWindowData")._output_buffer
+    panel = window.get_data("RunExternalToolsPluginWindowData")._output_buffer
     panel.clear()
 
     if output_type == 'output-panel':

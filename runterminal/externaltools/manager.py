@@ -831,7 +831,7 @@ class Manager:
         self.save_current_tool()
 
         for window in gedit.app_get_default().get_windows():
-            helper = window.get_data("ExternalToolsPluginWindowData")
+            helper = window.get_data("RunExternalToolsPluginWindowData")
             helper.menu.update()
    
     def get_cell_data_cb(self, column, cell, model, piter):

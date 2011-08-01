@@ -22,7 +22,7 @@
 
 import gedit
 import gedit.utils
-import pango          
+import pango
 import gtk
 import gtk.gdk
 import gobject
@@ -33,7 +33,7 @@ import gnomevfs
 import os
 from gpdefs import *
 from math import *
-from externaltools import ExternalToolsWindowHelper, ToolLibrary, Manager
+from externaltools import RunExternalToolsWindowHelper, ToolLibrary, Manager
 from externaltools import FileLookup
 try:
     gettext.bindtextdomain(GETTEXT_PACKAGE, GP_LOCALEDIR)
@@ -272,7 +272,7 @@ ui_str = """
 
 class TerminalWindowHelper(object):
     def __init__(self, plugin, window):
-        self.dialog = ExternalToolsWindowHelper(plugin, window)
+        self.dialog = RunExternalToolsWindowHelper(plugin, window)
         self.gconfdir = "/apps/gedit-2/plugins/runterminal"
         self.gconf_client = gconf.client_get_default()        
         if not self.gconf_client.dir_exists(self.gconfdir):
@@ -285,7 +285,6 @@ class TerminalWindowHelper(object):
         self._panel.connect("populate-popup", self.on_panel_populate_popup)
         self._panel.show()
         self._panel.set_size_request(100, 100)
-        
         image = gtk.Image()
         image.set_from_icon_name("utilities-terminal", gtk.ICON_SIZE_MENU)
     
@@ -298,7 +297,7 @@ class TerminalWindowHelper(object):
         self.panel_at_right = self.gconf_client.get_bool(self.gconfdir+"/panel_at_right")
         if self.panel_at_right:
             self.move_panel_right()
-
+        self.hpane.set_property("position", 1)
         self.hpane.connect("notify", self.pane_resize)
         self.hpane.show_all()
         self.init_sized = False
@@ -311,9 +310,14 @@ class TerminalWindowHelper(object):
         
     def resize_wait(self):
         #print "sized", self.gconf_client.get_int(self.gconfdir+"/rightpanel_position")
-        self.init_sized = True
-        self.hpane.set_position(self.gconf_client.get_int(self.gconfdir+"/rightpanel_position"))
-        return False
+        x = self.hpane.get_property("max-position")
+        print "here", x
+        if (x > 1):
+            self.init_sized = True
+            self.hpane.set_position(self.gconf_client.get_int(self.gconfdir+"/rightpanel_position"))
+            return False
+        else:
+            return True
     
     def toggle_item(self, menu_item):
         if self.panel_at_right:
@@ -331,7 +335,7 @@ class TerminalWindowHelper(object):
         self.hpane.add1(self.vbox)
         self.hpane.add2(bottom)
         self.hbox.add(self.hpane)
-        gobject.timeout_add(1000, self.resize_wait)
+        gobject.timeout_add(10, self.resize_wait)
         
     def move_panel_bottom(self):
         bottom = self._window.get_bottom_panel()
@@ -343,6 +347,8 @@ class TerminalWindowHelper(object):
         self.hbox.add2(self.vbox)        
                 
     def deactivate(self):
+        if self.panel_at_right:
+            self.move_panel_bottom()
         bottom = self._window.get_bottom_panel()
         bottom.remove_item(self._panel)
 
@@ -354,18 +360,18 @@ class TerminalWindowHelper(object):
         location = self._panel.get_document_path()
         if location:
             path = os.path.dirname(location)
-        
+        else:
+            path = None
+            
         item = gtk.CheckMenuItem(_("Display panel on right"))
         item.set_active(self.panel_at_right)
         item.connect("toggled", self.toggle_item)        
-        item.set_sensitive(path is not None)
         menu.prepend(item)        
         
-        if location:
-            item = gtk.MenuItem(_("_Change to current directory"))
-            item.connect("activate", lambda menu_item: panel.change_directory(path))
-            item.set_sensitive(path is not None)
-            menu.prepend(item)
+        item = gtk.MenuItem(_("_Change to current directory"))
+        item.connect("activate", lambda menu_item: panel.change_directory(path))
+        item.set_sensitive(path is not None)
+        menu.prepend(item)
 
 
 class RunTerminalPlugin(gedit.Plugin):
@@ -380,7 +386,7 @@ class RunTerminalPlugin(gedit.Plugin):
     def activate(self, window):
         helper = TerminalWindowHelper(self, window)
         window.set_data(self.WINDOW_DATA_KEY, helper)
-        window.set_data("ExternalToolsPluginWindowData", helper.dialog)
+        window.set_data("RunExternalToolsPluginWindowData", helper.dialog)
 
     def deactivate(self, window):
         window.get_data(self.WINDOW_DATA_KEY).deactivate()
